@@ -1,3 +1,6 @@
 streamlit
 google-generativeai
 Pillow
+
+pandas
+PyPDF2
