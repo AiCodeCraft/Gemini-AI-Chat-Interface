@@ -113,7 +113,7 @@ This project highlights the importance of:
 ## Acknowledgments
 
 - **DeepSeek**: For providing AI-powered coding assistance and helping overcome technical challenges.
-- **[Your Name]**: For leading the project and integrating real-world use cases.
+- **VolkanSah**: For leading the project and integrating real-world use cases.
 - **Google Gemini API**: For enabling powerful AI interactions.
 
 ---
