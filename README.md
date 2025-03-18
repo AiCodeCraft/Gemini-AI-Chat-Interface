@@ -1,7 +1,7 @@
 
 # Gemini AI Chat Interface (Version 2)
 
-This is a Python-based interface to interact with Google's Gemini AI models, now enhanced with advanced file processing capabilities. The app supports text, image, and **ZIP file inputs**, making it a powerful tool for developers and AI enthusiasts. This version is **powered by DeepSeek and [Your Name]**, showcasing real-life coding collaboration between humans and AI.
+This is a Python-based interface to interact with Google's Gemini AI models, now enhanced with advanced file processing capabilities. The app supports text, image, and **ZIP file inputs**, making it a powerful tool for developers and AI enthusiasts. This version is **powered by DeepSeek and me** , showcasing real-life coding collaboration between humans and AI.
 
 ## Features
 
