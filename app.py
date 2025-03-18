@@ -1,107 +1,158 @@
-# Copyright Volkan Kücükbudak
-# Github: https://github.com/volkansah
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 import io
 import base64
+import pandas as pd
+import zipfile
+import PyPDF2
 
+# Konfiguration der Seite
 st.set_page_config(page_title="Gemini AI Chat", layout="wide")
 
 st.title("🤖 Gemini AI Chat Interface")
 st.markdown("""
 **Welcome to the Gemini AI Chat Interface!**
-Chat seamlessly with Google's advanced Gemini AI models, supporting both text and image inputs.
+Chat seamlessly with Google's advanced Gemini AI models, supporting multiple input types.
 🔗 [GitHub Profile](https://github.com/volkansah) | 
 📂 [Project Repository](https://github.com/volkansah/gemini-ai-chat) | 
 💬 [Soon](https://aicodecraft.io)
-
-Follow me for more innovative projects and updates!
 """)
 
-
-def encode_image(image):
-    """Convert PIL Image to base64 string"""
-    buffered = io.BytesIO()
-    image.save(buffered, format="JPEG")
-    image_bytes = buffered.getvalue()
-    encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-    return encoded_image
-
-# Sidebar for settings
-with st.sidebar:
-    api_key = st.text_input("Enter Google AI API Key", type="password")
-    model = st.selectbox(
-        "Select Model",
-        [
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash-8B",
-            "gemini-1.5-pro-vision-latest",
-            "gemini-1.0-pro",
-            "gemini-1.0-pro-vision-latest",
-
-            "gemini-2.0-pro-exp-02-05",
-            "gemini-2.0-flash-lite",
-            "gemini-2.0-flash-exp-image-generation",
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-thinking-exp-01-21"
-        ]
-    )
-    
-    temperature = st.slider("Temperature", 0.0, 1.0, 0.7)
-    max_tokens = st.slider("Max Tokens", 1, 2048, 1000000)
-    system_prompt = st.text_area("System Prompt (Optional)")
-
-# Initialize session state for chat history
+# Session State Management
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "uploaded_content" not in st.session_state:
+    st.session_state.uploaded_content = None
 
-# Display chat history
+# Funktionen zur Dateiverarbeitung
+def encode_image(image):
+    buffered = io.BytesIO()
+    image.save(buffered, format="JPEG")
+    return base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+def process_file(uploaded_file):
+    file_type = uploaded_file.name.split('.')[-1].lower()
+    
+    if file_type in ["jpg", "jpeg", "png"]:
+        return {"type": "image", "content": Image.open(uploaded_file).convert('RGB')}
+    
+    code_extensions = ["html", "css", "php", "js", "py", "java", "c", "cpp"]
+    if file_type in ["txt"] + code_extensions:
+        return {"type": "text", "content": uploaded_file.read().decode("utf-8")}
+    
+    if file_type in ["csv", "xlsx"]:
+        df = pd.read_csv(uploaded_file) if file_type == "csv" else pd.read_excel(uploaded_file)
+        return {"type": "text", "content": df.to_string()}
+    
+    if file_type == "pdf":
+        reader = PyPDF2.PdfReader(uploaded_file)
+        return {"type": "text", "content": "".join(page.extract_text() for page in reader.pages if page.extract_text())}
+    
+    if file_type == "zip":
+        with zipfile.ZipFile(uploaded_file) as z:  # <- Hier beginnt der Block
+            newline = "\n"
+            content = f"ZIP Contents:{newline}"
+            
+            text_extensions = ('.txt', '.csv', '.py', '.html', '.js', '.css', 
+                              '.php', '.json', '.xml', '.c', '.cpp', '.java', 
+                              '.cs', '.rb', '.go', '.ts', '.swift', '.kt', '.rs', '.sh', '.sql')
+            
+            for file_info in z.infolist():
+                if not file_info.is_dir():
+                    try:
+                        with z.open(file_info.filename) as file:
+                            if file_info.filename.lower().endswith(text_extensions):
+                                file_content = file.read().decode('utf-8')
+                                content += f"{newline}📄 {file_info.filename}:{newline}{file_content}{newline}"
+                            else:
+                                raw_content = file.read()
+                                try:
+                                    decoded_content = raw_content.decode('utf-8')
+                                    content += f"{newline}📄 {file_info.filename} (unbekannte Erweiterung):{newline}{decoded_content}{newline}"
+                                except UnicodeDecodeError:
+                                    content += f"{newline}⚠️ Binärdatei ignoriert: {file_info.filename}{newline}"
+                    except Exception as e:
+                        content += f"{newline}❌ Fehler bei {file_info.filename}: {str(e)}{newline}"
+            
+            return {"type": "text", "content": content}  # Korrekt eingerückt
+    
+    return {"type": "error", "content": "Unsupported file format"}
+
+# Sidebar für Einstellungen
+with st.sidebar:
+    api_key = st.text_input("Google AI API Key", type="password")
+    model = st.selectbox("Model", [
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-1.5-pro-vision-latest",  # Vision-Modell für Bilder
+        "gemini-1.0-pro",
+        "gemini-1.0-pro-vision-latest",  # Vision-Modell für Bilder
+        "gemini-2.0-pro-exp-02-05",
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash-exp-image-generation",  # Vision-Modell für Bilder
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-thinking-exp-01-21"
+    ])
+    temperature = st.slider("Temperature", 0.0, 1.0, 0.7)
+    max_tokens = st.slider("Max Tokens", 1, 2048, 1000)
+
+# Datei-Upload
+uploaded_file = st.file_uploader("Upload File (Image/Text/PDF/ZIP)", 
+                               type=["jpg", "jpeg", "png", "txt", "pdf", "zip", 
+                                     "csv", "xlsx", "html", "css", "php", "js", "py"])
+
+if uploaded_file:
+    processed = process_file(uploaded_file)
+    st.session_state.uploaded_content = processed
+    
+    if processed["type"] == "image":
+        st.image(processed["content"], caption="Uploaded Image", use_container_width=True)
+    elif processed["type"] == "text":
+        st.text_area("File Preview", processed["content"], height=200)
+
+# Chat-Historie anzeigen
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# File uploader for images
-uploaded_file = st.file_uploader("Upload an image (optional)", type=["jpg", "jpeg", "png"])
-uploaded_image = None
-if uploaded_file is not None:
-    uploaded_image = Image.open(uploaded_file).convert('RGB')
-    st.image(uploaded_image, caption="Uploaded Image", use_container_width=True)
-
-# Chat input
-user_input = st.chat_input("Type your message here...")
-
-if user_input and api_key:
+# Chat-Eingabe verarbeiten
+if prompt := st.chat_input("Your message..."):
+    if not api_key:
+        st.warning("API Key benötigt!")
+        st.stop()
+    
     try:
-        # Configure the API
+        # API konfigurieren
         genai.configure(api_key=api_key)
         
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.markdown(user_input)
-
-        # Prepare the model and content
-        model_instance = genai.GenerativeModel(model_name=model)
+        # Modell auswählen
+        model_instance = genai.GenerativeModel(model)
         
-        content = []
-        if uploaded_image:
-            # Convert image to base64
-            encoded_image = encode_image(uploaded_image)
-            content = [
-                {"text": user_input},
-                {
+        # Inhalt vorbereiten
+        content = [{"text": prompt}]
+        
+        # Dateiinhalt hinzufügen
+        if st.session_state.uploaded_content:
+            if st.session_state.uploaded_content["type"] == "image":
+                if "vision" not in model.lower():
+                    st.error("Bitte ein Vision-Modell für Bilder auswählen!")
+                    st.stop()
+                content.append({
                     "inline_data": {
                         "mime_type": "image/jpeg",
-                        "data": encoded_image
+                        "data": encode_image(st.session_state.uploaded_content["content"])
                     }
-                }
-            ]
-        else:
-            content = [{"text": user_input}]
-
-        # Generate response
+                })
+            elif st.session_state.uploaded_content["type"] == "text":
+                content[0]["text"] += f"\n\n[File Content]\n{st.session_state.uploaded_content['content']}"
+        
+        # Nachricht zur Historie hinzufügen
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # Antwort generieren
         response = model_instance.generate_content(
             content,
             generation_config=genai.types.GenerationConfig(
@@ -109,20 +160,20 @@ if user_input and api_key:
                 max_output_tokens=max_tokens
             )
         )
-
-        # Display assistant response
-        with st.chat_message("assistant"):
-            st.markdown(response.text)
         
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response.text})
-
+        # Überprüfen, ob die Antwort gültig ist
+        if not response.candidates:
+            st.error("API Error: Keine gültige Antwort erhalten. Überprüfe die Eingabe oder das Modell.")
+        else:
+            # Antwort anzeigen
+            with st.chat_message("assistant"):
+                st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+        
     except Exception as e:
-        st.error(f"Error: {str(e)}")
-        st.error("If using an image, make sure to select a vision-enabled model (ones with 'vision' in the name)")
-
-elif not api_key and user_input:
-    st.warning("Please enter your API key in the sidebar first.")
+        st.error(f"API Error: {str(e)}")
+        if "vision" not in model and st.session_state.uploaded_content["type"] == "image":
+            st.error("Für Bilder einen Vision-fähigen Modell auswählen!")
 
 # Instructions in the sidebar
 with st.sidebar:
