@@ -11,9 +11,7 @@ st.set_page_config(page_title="Gemini AI Chat", layout="wide")
 st.title("🤖 Gemini AI Chat Interface")
 st.markdown("""
 **Welcome to the Gemini AI Chat Interface!**
-
 Chat seamlessly with Google's advanced Gemini AI models, supporting both text and image inputs.
-
 🔗 [GitHub Profile](https://github.com/volkansah) | 
 📂 [Project Repository](https://github.com/volkansah/gemini-ai-chat) | 
 💬 [Soon](https://aicodecraft.io)
@@ -41,12 +39,18 @@ with st.sidebar:
             "gemini-1.5-flash-8B",
             "gemini-1.5-pro-vision-latest",
             "gemini-1.0-pro",
-            "gemini-1.0-pro-vision-latest"
+            "gemini-1.0-pro-vision-latest",
+
+            "gemini-2.0-pro-exp-02-05",
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash-exp-image-generation",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-thinking-exp-01-21"
         ]
     )
     
     temperature = st.slider("Temperature", 0.0, 1.0, 0.7)
-    max_tokens = st.slider("Max Tokens", 1, 2048, 1000)
+    max_tokens = st.slider("Max Tokens", 1, 2048, 1000000)
     system_prompt = st.text_area("System Prompt (Optional)")
 
 # Initialize session state for chat history
@@ -130,6 +134,8 @@ with st.sidebar:
     4. Optional: Set a system prompt
     5. Upload an image (optional)
     6. Type your message and press Enter
-    ### Copyright
-    Volkan Kücükbudak
+    ### About
+    🔗 [GitHub Profile](https://github.com/volkansah) | 
+    📂 [Project Repository](https://github.com/volkansah/gemini-ai-chat) | 
+    💬 [Soon](https://aicodecraft.io)
     """)
