@@ -14,7 +14,7 @@ This is a Python-based interface to interact with Google's Gemini AI models, now
 
 ## Demo
 
-Try the app hosted on Hugging Face: [Gemini AI Chat](https://huggingface.co/spaces/AiCodeCarft/Gemini-Interface)
+Try the app hosted on Hugging Face: [Gemini AI Chat](https://huggingface.co/spaces/AiCodeCarft/All-Gemini-Interface-Deluxe)
 
 ![Gemini AI Chat Interface](gemini.png)
 
