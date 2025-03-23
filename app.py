@@ -1,3 +1,5 @@
+# Copyright S. Volkan Kücükbudak
+# GPL3
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
@@ -95,7 +97,7 @@ with st.sidebar:
         "gemini-2.0-flash-thinking-exp-01-21"
     ])
     temperature = st.slider("Temperature", 0.0, 1.0, 0.7)
-    max_tokens = st.slider("Max Tokens", 1, 2048, 1000)
+    max_tokens = st.slider("Max Tokens", 1, 100000, 1000)
 
 # Datei-Upload
 uploaded_file = st.file_uploader("Upload File (Image/Text/PDF/ZIP)", 
